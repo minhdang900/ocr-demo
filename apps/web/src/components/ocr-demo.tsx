@@ -618,31 +618,30 @@ export default function OcrDemoUI() {
               </div>
 
               {/* Toolbar pinned to column, not scrolling with container */}
-              <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
-                <div className="bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 flex gap-2 border border-neutral-200">
+              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 z-20">
+                <div className="bg-white/95 backdrop-blur rounded-xl shadow-md px-2 py-1.5 flex gap-1.5 border border-neutral-200">
                   <button 
-                    className={`px-3 py-1.5 rounded-md border hover:bg-neutral-100 ${zoom <= ZOOM_MIN ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    className={`px-2 py-1 rounded text-sm border hover:bg-neutral-100 ${zoom <= ZOOM_MIN ? 'opacity-50 cursor-not-allowed' : ''}`} 
                     title="Zoom out" 
                     onClick={() => setZoomWithLimits(prev => prev - 0.25)}
                     disabled={zoom <= ZOOM_MIN}
                   >
                     −
                   </button>
-                  <span className="px-2 py-1.5 text-sm font-mono text-neutral-600 min-w-[3rem] text-center" title={`Zoom: ${Math.round(zoom * 100)}% (${Math.round(ZOOM_MIN * 100)}% - ${Math.round(ZOOM_MAX * 100)}%)`}>
+                  <span className="px-1.5 py-1 text-xs font-mono text-neutral-600 min-w-[2.5rem] text-center" title={`Zoom: ${Math.round(zoom * 100)}% (${Math.round(ZOOM_MIN * 100)}% - ${Math.round(ZOOM_MAX * 100)}%)`}>
                     {Math.round(zoom * 100)}%
                   </span>
                   <button 
-                    className={`px-3 py-1.5 rounded-md border hover:bg-neutral-100 ${zoom >= ZOOM_MAX ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    className={`px-2 py-1 rounded text-sm border hover:bg-neutral-100 ${zoom >= ZOOM_MAX ? 'opacity-50 cursor-not-allowed' : ''}`} 
                     title="Zoom in" 
                     onClick={() => setZoomWithLimits(prev => prev + 0.25)}
                     disabled={zoom >= ZOOM_MAX}
                   >
                     ＋
                   </button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Fit to screen (Ctrl+Wheel to zoom)" onClick={() => setZoomWithLimits(1)}>Fit</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Rotate 90°" onClick={() => setRotation(r => ((r + 90) % 360) as 0 | 90 | 180 | 270)}>↻</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Toggle highlights" onClick={() => setShowHighlights(v => !v)}>{showHighlights ? 'Hide' : 'Show'}</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Upload another" onClick={() => { setImgUrl(null); setBoxes([]); setHoverBox(null); setStatus(null); }}>Upload</button>
+                  <button className="px-2 py-1 rounded text-sm border hover:bg-neutral-100" title="Fit to screen (Ctrl+Wheel to zoom)" onClick={() => setZoomWithLimits(1)}>Fit</button>
+                  <button className="px-2 py-1 rounded text-sm border hover:bg-neutral-100" title="Toggle highlights" onClick={() => setShowHighlights(v => !v)}>{showHighlights ? 'Hide' : 'Show'}</button>
+                  <button className="px-2 py-1 rounded text-sm border hover:bg-neutral-100" title="Upload another" onClick={() => { setImgUrl(null); setBoxes([]); setHoverBox(null); setStatus(null); }}>Upload</button>
                 </div>
               </div>
             </div>
