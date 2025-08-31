@@ -1,6 +1,6 @@
-# Xtracta OCR - Interactive Document Processing Platform
+# Xtracta OCR - OCR Tool Demo
 
-A comprehensive OCR web application that enables users to upload documents and interactively extract text from specific regions using drag-and-select functionality. Built with Next.js frontend and NestJS microservices backend, featuring real-time OCR processing and interactive text selection with **word-level bounding boxes**.
+A comprehensive OCR web application that enables users to upload documents and interactively extract text from specific regions using drag-and-select functionality. Built with **microservices architecture** in a **monorepo structure**, featuring Next.js frontend, NestJS API gateway, and Python OCR service with real-time processing and interactive text selection with **word-level bounding boxes**.
 
 ## 🎯 Project Purpose
 
@@ -14,6 +14,8 @@ This project was developed as a **technical challenge** to demonstrate advanced 
 4. **✅ Hover Highlighting**: Words are highlighted when mouse hovers over them
 5. **✅ Position Mapping**: OCR word positions are accurately mapped to the original image
 6. **✅ Word-Level Extraction**: Individual words with precise bounding boxes and coordinates
+7. **✅ Microservices Architecture**: Decoupled services for scalability and maintainability
+8. **✅ Monorepo Structure**: Unified codebase with shared dependencies and tooling
 
 ## Problem Statement & Solution Approach
 
@@ -126,28 +128,46 @@ sequenceDiagram
 - No batch processing
 - Limited to region-by-region extraction
 
-### Our Implementation: Architecture B
+### Our Implementation: Microservices Architecture
 
-We chose **Architecture B** for its simplicity, cost-effectiveness, and superior user experience. The system allows users to:
+We chose **Microservices Architecture** for its scalability, maintainability, and superior user experience. The system is built as a **monorepo** with decoupled services that allow users to:
 1. Upload any document image
 2. Drag and select specific regions
 3. Get instant OCR results for selected areas
 4. Build up text extraction progressively
 5. Extract word-level data with precise bounding boxes
 
+#### 🏗️ Monorepo Benefits
+- **Unified Development**: Single repository for all services
+- **Shared Dependencies**: Common packages and utilities
+- **Consistent Tooling**: Unified build, test, and deployment processes
+- **Cross-Service Refactoring**: Easy to refactor across service boundaries
+- **Simplified CI/CD**: Single pipeline for all services
+
+#### 🔧 Microservices Benefits
+- **Service Independence**: Each service can be developed, deployed, and scaled independently
+- **Technology Diversity**: Different services can use optimal technologies (Next.js, NestJS, Python)
+- **Fault Isolation**: Service failures don't cascade to other services
+- **Team Autonomy**: Different teams can work on different services
+- **Scalability**: Services can be scaled independently based on load
+
 ## 🏗️ Project Structure
 
+### Monorepo Architecture Overview
+
+This project follows a **monorepo structure** with **microservices architecture**, organized for optimal development experience and service independence.
+
 ```
-xtracta-ocr/
-├── 📁 apps/                          # Frontend and Gateway applications
-│   ├── 📁 web/                       # Next.js Frontend Application
+xtracta-ocr/                           # 🏠 Monorepo Root
+├── 📁 apps/                          # 🎯 Frontend and Gateway Applications
+│   ├── 📁 web/                       # 🌐 Next.js Frontend Application
 │   │   ├── 📁 src/
 │   │   │   ├── 📁 app/               # Next.js App Router
 │   │   │   └── 📁 components/        # React Components
 │   │   │       └── ocr-demo.tsx      # Main OCR Demo Component
 │   │   ├── Dockerfile                # Web App Container
-│   │   └── package.json
-│   └── 📁 gateway/                   # NestJS API Gateway
+│   │   └── package.json              # Frontend Dependencies
+│   └── 📁 gateway/                   # 🚪 NestJS API Gateway Service
 │       ├── 📁 src/
 │       │   ├── 📁 files/             # File Management Module
 │       │   ├── 📁 health/            # Health Check Module
@@ -159,69 +179,151 @@ xtracta-ocr/
 │       │   ├── app.module.ts         # Main Application Module
 │       │   └── main.ts               # Application Entry Point
 │       ├── Dockerfile                # Gateway Container
-│       └── package.json
-├── 📁 services/                      # Backend Services
-│   └── 📁 ocr/                       # Python OCR Service
+│       └── package.json              # Gateway Dependencies
+├── 📁 services/                      # 🔧 Backend Microservices
+│   └── 📁 ocr/                       # 🤖 Python OCR Service
 │       ├── 📁 app/
 │       │   └── http_server.py        # FastAPI HTTP Server
 │       ├── Dockerfile                # OCR Service Container
 │       ├── requirements.txt          # Python Dependencies
 │       └── pyproject.toml            # Python Project Config
-├── 📁 scripts/                       # Setup and Utility Scripts
+├── 📁 packages/                      # 📦 Shared Packages (Monorepo)
+│   ├── 📁 contracts/                 # 📋 Shared DTOs and Interfaces
+│   ├── 📁 events/                    # 📡 Event Schemas and Types
+│   └── 📁 utils/                     # 🛠️ Shared Utilities
+├── 📁 scripts/                       # 🔧 Setup and Utility Scripts
 │   ├── setup-localhost.sh            # Localhost Development Setup
 │   ├── setup-docker.sh               # Docker Environment Setup
 │   └── setup.sh                      # Legacy Setup Script
-├── 📁 data/                          # Data Storage (created by scripts)
+├── 📁 data/                          # 💾 Data Storage (created by scripts)
 │   ├── 📁 mongodb/                   # MongoDB Data Directory
 │   └── 📁 redis/                     # Redis Data Directory
-├── 📁 uploads/                       # File Upload Directory
-├── docker-compose.yml                # Docker Services Configuration
-├── env.example                       # Environment Variables Template
-├── package.json                      # Root Package Configuration
-├── pnpm-workspace.yaml               # PNPM Workspace Configuration
-├── start-services.sh                 # Quick Start Script
-└── README.md                         # This File
+├── 📁 uploads/                       # 📁 File Upload Directory
+├── 📁 logs/                          # 📝 PM2 Logs Directory
+├── docker-compose.yml                # 🐳 Docker Services Configuration
+├── ecosystem.config.js               # ⚙️ PM2 Process Management
+├── env.example                       # 🔧 Environment Variables Template
+├── package.json                      # 📦 Root Package Configuration
+├── pnpm-workspace.yaml               # 🔗 PNPM Workspace Configuration
+├── start-services.sh                 # 🚀 Quick Start Script
+└── README.md                         # 📚 This File
 ```
+
+### 🏗️ Monorepo Structure Benefits
+
+#### **📦 Shared Packages (`packages/`)**
+- **`contracts/`**: Shared DTOs, interfaces, and type definitions
+- **`events/`**: Event schemas and message types
+- **`utils/`**: Common utilities and helper functions
+
+#### **🎯 Applications (`apps/`)**
+- **`web/`**: Next.js frontend application
+- **`gateway/`**: NestJS API gateway service
+
+#### **🔧 Services (`services/`)**
+- **`ocr/`**: Python FastAPI OCR processing service
+
+#### **🛠️ Development Tools**
+- **PNPM Workspace**: Efficient dependency management
+- **Shared Scripts**: Unified build, test, and deployment processes
+- **Docker Compose**: Multi-service container orchestration
+- **PM2**: Process management for development and production
 
 ## 🏛️ System Architecture
 
-### Simplified 3-Service Architecture
+### Microservices Architecture Overview
+
+Our system follows a **microservices architecture** with **3 decoupled services** that communicate via HTTP APIs, enabling independent development, deployment, and scaling.
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Next.js Web   │    │  NestJS Gateway │    │ Python OCR      │
 │   Frontend      │◄──►│  API Service    │◄──►│  HTTP Service   │
+│   (Microservice)│    │  (Microservice) │    │  (Microservice) │
 │                 │    │                 │    │                 │
 │ • Drag & Drop   │    │ • Request       │    │ • OCR.space API │
 │ • Canvas        │    │   Routing       │    │ • Image         │
 │ • Word-Level    │    │ • HTTP Client   │    │   Processing    │
 │   Bounding      │    │ • Response      │    │ • Word-Level    │
 │   Boxes         │    │   Formatting    │    │   Extraction    │
+│ • React Hooks   │    │ • Validation    │    │ • FastAPI       │
+│ • TypeScript    │    │ • Error Handling│    │ • Python        │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
+         │                       │                       │
+         │                       │                       │
+         ▼                       ▼                       ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│   Frontend      │    │   API Gateway   │    │   OCR Service   │
+│   Container     │    │   Container     │    │   Container     │
+│   (Port 3000)   │    │   (Port 3001)   │    │   (Port 8001)   │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
+```
+
+### 🔗 Service Communication Flow
+
+```
+Microservices Communication Flow:
+┌─────────────┐  HTTP   ┌─────────────┐  HTTP   ┌─────────────┐
+│   Browser   │ ──────► │  Frontend   │ ──────► │   Gateway   │
+│  (User)     │         │  (Next.js)  │         │  (NestJS)   │
+└─────────────┘         │ Microservice│         │ Microservice│
+                        └─────────────┘         └─────────────┘
+                                                       │
+                                                       │ HTTP
+                                                       ▼
+                                              ┌─────────────┐
+                                              │ OCR Service │
+                                              │  (Python)   │
+                                              │ Microservice│
+                                              └─────────────┘
+                                                       │
+                                                       │ HTTP
+                                                       ▼
+                                              ┌─────────────┐
+                                              │ OCR.space   │
+                                              │ API         │
+                                              │ (External)  │
+                                              └─────────────┘
+
+Request Flow:
+1. Browser → Frontend (Next.js): User interaction
+2. Frontend → Gateway (NestJS): API requests
+3. Gateway → OCR Service (Python): OCR processing
+4. OCR Service → OCR.space API: Text extraction
+5. Response flows back through the chain
 ```
 
 ### Service Breakdown
 
-#### 🎨 Frontend (Next.js)
+#### 🎨 Frontend Microservice (Next.js)
+- **Technology Stack**: Next.js 14, TypeScript, React, Tailwind CSS
 - **Interactive Canvas**: HTML5 Canvas with drag-select functionality
 - **Word-Level Visualization**: Individual bounding boxes for each word
 - **Real-time Feedback**: Hover highlighting and text preview
 - **Responsive UI**: Modern, mobile-friendly interface
 - **File Upload**: Drag-and-drop with validation
+- **Service Independence**: Can be developed and deployed independently
+- **Containerization**: Docker container for consistent deployment
 
-#### 🌐 Gateway Service (NestJS)
+#### 🌐 API Gateway Microservice (NestJS)
+- **Technology Stack**: NestJS, TypeScript, Node.js
 - **API Gateway**: Central entry point for all requests
 - **HTTP Client**: Communicates with Python OCR service via HTTP
 - **Request Validation**: File size and format validation
 - **Response Formatting**: Standardized API responses with word-level data
 - **Error Handling**: Comprehensive HTTP error handling
+- **Service Discovery**: Routes requests to appropriate microservices
+- **Load Balancing**: Can be scaled horizontally
 
-#### 🔍 OCR Service (Python FastAPI)
+#### 🔍 OCR Processing Microservice (Python FastAPI)
+- **Technology Stack**: Python FastAPI, Python 3.11+, OCR.space API
 - **HTTP Server**: FastAPI-based HTTP server for reliable communication
 - **OCR.space Integration**: External OCR API for text extraction
 - **Word-Level Processing**: Extracts individual words with precise coordinates
 - **Image Optimization**: Pre-processing for better accuracy
 - **Error Handling**: Robust error management with HTTP status codes
+- **Language Support**: Multi-language OCR processing
+- **Performance Optimization**: Async processing for better throughput
 
 ### Why HTTP Communication?
 
@@ -243,24 +345,42 @@ We use **HTTP** for inter-service communication due to its reliability and simpl
 
 ## 🛠️ Technology Stack
 
-### Frontend
-- **Next.js 14** (App Router)
-- **TypeScript** for type safety
-- **HTML5 Canvas** for interactive image manipulation
-- **Tailwind CSS** for styling
-- **React Hooks** for state management
+### 🏗️ Monorepo & Microservices Architecture
+- **PNPM Workspace** - Monorepo dependency management
+- **Microservices** - Decoupled service architecture
+- **Containerization** - Docker for each microservice
+- **Process Management** - PM2 for development and production
 
-### Backend
-- **NestJS** (TypeScript) - API Gateway
-- **Python FastAPI** - OCR Processing Service
-- **HTTP Communication** - Reliable inter-service communication
-- **OCR.space API** - External OCR service
+### 🎨 Frontend Microservice
+- **Next.js 14** (App Router) - React framework
+- **TypeScript** - Type safety and better development experience
+- **HTML5 Canvas** - Interactive image manipulation
+- **Tailwind CSS** - Utility-first CSS framework
+- **React Hooks** - State management and side effects
 
-### Infrastructure
-- **Docker & Docker Compose** - Containerization
+### 🌐 API Gateway Microservice
+- **NestJS** (TypeScript) - Enterprise Node.js framework
+- **TypeScript** - Type safety and better development experience
+- **HTTP Client** - Inter-service communication
+- **Validation** - Request/response validation with DTOs
+
+### 🔍 OCR Processing Microservice
+- **Python FastAPI** - Modern Python web framework
+- **Python 3.11+** - Latest Python features and performance
+- **OCR.space API** - External OCR service integration
+- **Async Processing** - High-performance async operations
+
+### 🔧 Infrastructure & DevOps
+- **Docker & Docker Compose** - Containerization and orchestration
+- **PM2** - Process management for Node.js and Python services
 - **MongoDB** - Document storage (optional)
 - **Redis** - Caching (optional)
 - **Nginx** - Load balancing (optional)
+
+### 📦 Shared Packages (Monorepo)
+- **Contracts** - Shared DTOs and interfaces
+- **Events** - Event schemas and message types
+- **Utils** - Common utilities and helper functions
 
 ## 🚀 Quick Start
 
@@ -337,12 +457,36 @@ pnpm install
 # Build packages
 pnpm run build
 
-# Create environment file
+# Create environment files
 cp env.example .env
+cd apps/web
+cp .env.example .env.local
 
 # Start development servers
 pnpm dev
 ```
+
+### Environment Configuration
+
+The application uses **server-side API calls** for enhanced security.
+
+**Required Configuration:**
+```bash
+# apps/web/.env.local
+GATEWAY_URL=http://localhost:3001
+```
+
+**Security Benefits:**
+- ✅ API keys protected server-side
+- ✅ Internal URLs hidden from client
+- ✅ Server-side input validation
+- ✅ Error sanitization
+- ✅ Better rate limiting control
+
+**For different environments:**
+- **Development**: `GATEWAY_URL=http://localhost:3001`
+- **Production**: `GATEWAY_URL=https://api.yourdomain.com`
+- **Docker**: `GATEWAY_URL=http://gateway:3001`
 
 **Note**: If you're using Python 3.13+, the setup script will automatically use compatible dependency versions. For best compatibility, consider using Python 3.11 or 3.12.
 
@@ -568,23 +712,37 @@ pnpm clean                 # Clean build artifacts
 
 ## 🎯 Key Achievements
 
+### ✅ Microservices Architecture Implementation
+- **Service Independence**: Each microservice can be developed, deployed, and scaled independently
+- **Technology Diversity**: Optimal technology stack for each service (Next.js, NestJS, Python)
+- **Fault Isolation**: Service failures don't cascade to other services
+- **Scalability**: Services can be scaled independently based on load
+- **Team Autonomy**: Different teams can work on different services
+
+### ✅ Monorepo Structure Benefits
+- **Unified Development**: Single repository for all services and shared packages
+- **Shared Dependencies**: Common packages and utilities across services
+- **Consistent Tooling**: Unified build, test, and deployment processes
+- **Cross-Service Refactoring**: Easy to refactor across service boundaries
+- **Simplified CI/CD**: Single pipeline for all services
+
 ### ✅ Word-Level OCR Implementation
 - **Individual Word Extraction**: Each word has precise coordinates
 - **Bounding Box Visualization**: Visual boxes around each word
 - **Interactive Hover**: Detailed word information on hover
 - **Line Organization**: Words grouped into lines with line-level bounding boxes
 
-### ✅ Simplified Architecture
-- **3-Service Design**: Web + Gateway + OCR (down from 6+ services)
-- **HTTP Communication**: Reliable inter-service communication
-- **Clean Codebase**: Removed unnecessary dependencies and files
-- **Optimized Builds**: Faster Docker builds and deployments
-
 ### ✅ Enhanced User Experience
 - **Real-time Interaction**: Immediate feedback on region selection
 - **Visual Feedback**: Color-coded word and line highlighting
 - **Responsive Design**: Works across different screen sizes
 - **Intuitive Interface**: Easy-to-use drag-and-select functionality
+
+### ✅ Development Experience
+- **PM2 Process Management**: Easy service management and monitoring
+- **Docker Containerization**: Consistent deployment across environments
+- **TypeScript Integration**: Type safety across all services
+- **Comprehensive Scripts**: One-command setup and management
 
 ## Acknowledgments
 

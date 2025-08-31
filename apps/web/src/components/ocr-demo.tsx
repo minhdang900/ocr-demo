@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { ocrApiClient, OcrRequest, OcrResponse } from "../lib/api-client";
 
 // ==========================
 // Types
@@ -46,22 +47,9 @@ function normWhitespace(s: string) {
   return s.replace(/\s+/g, " ").trim();
 }
 
-// Gateway API configuration
-const GATEWAY_BASE_URL = process.env.NEXT_PUBLIC_GATEWAY_URL || 'http://localhost:3001';
-
 // ==========================
 // Component Helpers
 // ==========================
-async function fetchWithTimeout(input: RequestInfo, init: RequestInit = {}, timeoutMs = 30000): Promise<Response> {
-  const controller = new AbortController();
-  const id = typeof window !== "undefined" ? window.setTimeout(() => controller.abort(), timeoutMs) : (setTimeout(() => ({}), timeoutMs) as any);
-  try {
-    const res = await fetch(input, { ...init, signal: controller.signal });
-    return res;
-  } finally {
-    if (typeof window !== "undefined") clearTimeout(id as number);
-  }
-}
 
 function parseOverlayToBoxes(overlay: any, cropOriginX: number, cropOriginY: number, imgW: number, imgH: number): OcrBox[] {
   const out: OcrBox[] = [];
@@ -312,45 +300,26 @@ export default function OcrDemoUI() {
         cropCanvas.toBlob((b) => b ? resolve(b) : reject(new Error("toBlob failed")), "image/png")
       );
 
-      // Build form and call Gateway API
-      const form = new FormData();
-      form.append("file", blob, "crop.png");
+      // Prepare OCR request using secure API client
+      const ocrRequest: OcrRequest = {
+        file: blob,
+        region: { x: sx, y: sy, width: sw, height: sh },
+        language: "eng",
+        options: {
+          OCREngine: '2',
+          isOverlayRequired: 'true',
+          detectOrientation: 'true',
+          scale: 'true'
+        }
+      };
+
+      // Process OCR using secure API client
+      const data: OcrResponse = await ocrApiClient.processOcr(ocrRequest);
       
-      // Add region information
-      const region = { x: sx, y: sy, width: sw, height: sh };
-      form.append("region", JSON.stringify(region));
-
-      // Add processing options
-      form.append("language", "eng");
-      form.append("options", JSON.stringify({
-        OCREngine: '2',
-        isOverlayRequired: 'true',
-        detectOrientation: 'true',
-        scale: 'true'
-        // Removed removeCSE as it's not a valid OCR.space parameter
-      }));
-
-      console.log(`Sending OCR request to: ${GATEWAY_BASE_URL}/api/ocr/process/crop`);
-      console.log(`Region: ${JSON.stringify(region)}`);
-
-      const res = await fetchWithTimeout(`${GATEWAY_BASE_URL}/api/ocr/process/crop`, { 
-        method: "POST", 
-        body: form 
-      }, 45000); // Increased timeout for OCR processing
-      
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.error(`Gateway API error ${res.status}:`, errorText);
-        throw new Error(`Gateway API error: ${res.status} - ${errorText}`);
+      if (!data.result) {
+        throw new Error("OCR processing failed: No result received");
       }
       
-      const data = await res.json();
-      console.log("OCR response:", data);
-      
-      if (!data.success) {
-        throw new Error(data.message || "OCR processing failed");
-      }
-
       const result = data.result;
       const parsedText: string = normWhitespace(result.text || "");
 
