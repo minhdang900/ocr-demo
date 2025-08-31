@@ -261,12 +261,12 @@ export default function OcrDemoUI() {
     const scaleFit = Math.min(maxW / drawW, maxH / drawH, 1);
     const scale = scaleFit * zoom;
 
-    // Calculate actual displayed dimensions (constrained by container)
-    const actualDrawW = Math.min(drawW * scale, maxW);
-    const actualDrawH = Math.min(drawH * scale, maxH);
+    // Allow image to zoom beyond container size with scrolling
+    const actualDrawW = Math.round(drawW * scale);
+    const actualDrawH = Math.round(drawH * scale);
 
-    canvasEl.width = Math.round(actualDrawW);
-    canvasEl.height = Math.round(actualDrawH);
+    canvasEl.width = actualDrawW;
+    canvasEl.height = actualDrawH;
 
     const img = new Image();
     img.onload = () => {
@@ -275,7 +275,7 @@ export default function OcrDemoUI() {
       if (rotation === 90) { ctx.translate(canvasEl.width, 0); ctx.rotate(Math.PI/2); }
       else if (rotation === 180) { ctx.translate(canvasEl.width, canvasEl.height); ctx.rotate(Math.PI); }
       else if (rotation === 270) { ctx.translate(0, canvasEl.height); ctx.rotate(3*Math.PI/2); }
-      ctx.drawImage(img, 0, 0, Math.round(actualDrawW), Math.round(actualDrawH));
+      ctx.drawImage(img, 0, 0, actualDrawW, actualDrawH);
       ctx.restore();
 
       if (showHighlights) {
@@ -377,7 +377,7 @@ export default function OcrDemoUI() {
     }
 
     // Convert canvas coordinates to image coordinates
-    // The canvas dimensions now represent the actual displayed image size
+    // The canvas dimensions now represent the full zoomed image size
     let sx = Math.floor((r.x / dw) * actualImgW);
     let sy = Math.floor((r.y / dh) * actualImgH);
     let sw = Math.ceil((r.w / dw) * actualImgW);
@@ -396,16 +396,7 @@ export default function OcrDemoUI() {
     sw = clamp(sw, 1, imgW - sx);
     sh = clamp(sh, 1, imgH - sy);
 
-    // Debug logging for coordinate transformation
-    console.log('Drag selection coordinates:', {
-      canvas: { x: r.x, y: r.y, w: r.w, h: r.h },
-      canvasSize: { w: dw, h: dh },
-      image: { x: sx, y: sy, w: sw, h: sh },
-      rotation,
-      zoom,
-      imgNaturalSize: { w: imgW, h: imgH },
-      actualDisplayed: { w: actualImgW, h: actualImgH }
-    });
+
 
 
 
@@ -593,10 +584,10 @@ export default function OcrDemoUI() {
           <section className="grid grid-cols-1 lg:grid-cols-10 gap-6">
             {/* Canvas / Viewer (70%) */}
             <div className="relative lg:col-span-7 bg-white border rounded-xl shadow-sm">
-              <div ref={containerRef} className="relative h-[85vh] grid place-items-center overflow-auto">
+              <div ref={containerRef} className="relative h-[85vh] overflow-auto">
                 <canvas
                   ref={canvasRef}
-                  className="block max-w-full cursor-crosshair"
+                  className="block cursor-crosshair"
                   onMouseDown={onCanvasMouseDown}
                   onMouseMove={onCanvasMouseMove}
                   onMouseUp={onCanvasMouseUp}
