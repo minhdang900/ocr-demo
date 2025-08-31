@@ -1,0 +1,63 @@
+{
+  "name": "xtracta-ocr",
+  "version": "1.0.0",
+  "description": "OCR Web Application with Next.js frontend and NestJS microservices",
+  "private": true,
+  "scripts": {
+    "dev": "pnpm run --parallel dev",
+    "dev:web": "pnpm --filter @xtracta/web dev",
+    "dev:gateway": "pnpm --filter @xtracta/gateway dev",
+    "dev:ocr": "cd services/ocr && ./start_server.sh",
+    "dev:all": "pnpm run --parallel dev:web dev:gateway dev:ocr",
+    "build": "pnpm run --recursive build",
+    "build:web": "pnpm --filter @xtracta/web build",
+    "build:gateway": "pnpm --filter @xtracta/gateway build",
+    "build:ocr": "echo 'OCR service does not require build step'",
+    "start": "pnpm run --parallel start",
+    "start:web": "pnpm --filter @xtracta/web start",
+    "start:gateway": "pnpm --filter @xtracta/gateway start",
+    "start:ocr": "cd services/ocr && ./start_server.sh",
+    "test": "pnpm run --recursive test",
+    "lint": "pnpm run --recursive lint",
+    "clean": "pnpm run --recursive clean",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "docker:build": "docker-compose build",
+    "setup:docker": "bash scripts/setup-docker.sh",
+    "setup:localhost": "bash scripts/setup-localhost.sh",
+    "pm2:start": "pm2 start ecosystem.config.js",
+    "pm2:stop": "pm2 stop all",
+    "pm2:restart": "pm2 restart all",
+    "pm2:delete": "pm2 delete all",
+    "pm2:logs": "pm2 logs",
+    "pm2:status": "pm2 status",
+    "ocr:setup": "cd services/ocr && python3 -m venv .venv && source .venv/bin/activate && pip install -r requirements.txt",
+    "ocr:install": "cd services/ocr && source .venv/bin/activate && pip install -r requirements.txt",
+    "ocr:test": "cd services/ocr && source .venv/bin/activate && python -m pytest tests/",
+    "ocr:logs": "pm2 logs xtracta-ocr",
+    "ocr:restart": "pm2 restart xtracta-ocr"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.5",
+    "typescript": "^5.3.3",
+    "prettier": "^3.0.0",
+    "eslint": "^8.56.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "pnpm": ">=8.0.0"
+  },
+  "keywords": [
+    "ocr",
+    "nextjs",
+    "nestjs",
+    "microservices",
+    "typescript",
+    "document-processing",
+    "monorepo"
+  ],
+  "author": "Dang Tran",
+  "license": "MIT"
+}
