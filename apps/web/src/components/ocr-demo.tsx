@@ -133,6 +133,39 @@ export default function OcrDemoUI() {
   const [zoom, setZoom] = useState(1);
   const [rotation, setRotation] = useState<0 | 90 | 180 | 270>(0);
   const [showHighlights, setShowHighlights] = useState(true);
+  
+  // Zoom limits
+  const ZOOM_MIN = 0.1;
+  const ZOOM_MAX = 10;
+  
+  // Zoom helper function
+  const setZoomWithLimits = (newZoom: number | ((prev: number) => number)) => {
+    const targetZoom = typeof newZoom === 'function' ? newZoom(zoom) : newZoom;
+    const clampedZoom = clamp(targetZoom, ZOOM_MIN, ZOOM_MAX);
+    
+    // Only update if the zoom actually changed
+    if (clampedZoom !== zoom) {
+      setZoom(clampedZoom);
+      
+      // Show feedback when hitting limits
+      if (targetZoom < ZOOM_MIN) {
+        setStatus(`⚠️ Minimum zoom reached (${Math.round(ZOOM_MIN * 100)}%)`);
+        setTimeout(() => setStatus(null), 2000);
+      } else if (targetZoom > ZOOM_MAX) {
+        setStatus(`⚠️ Maximum zoom reached (${Math.round(ZOOM_MAX * 100)}%)`);
+        setTimeout(() => setStatus(null), 2000);
+      }
+    }
+  };
+  
+  // Mouse wheel zoom handler
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      const delta = e.deltaY > 0 ? -0.1 : 0.1;
+      setZoomWithLimits(prev => prev + delta);
+    }
+  };
 
   // Refs
   const inputRef = useRef<HTMLInputElement | null>(null);
@@ -228,8 +261,12 @@ export default function OcrDemoUI() {
     const scaleFit = Math.min(maxW / drawW, maxH / drawH, 1);
     const scale = scaleFit * zoom;
 
-    canvasEl.width = Math.round(drawW * scale);
-    canvasEl.height = Math.round(drawH * scale);
+    // Calculate actual displayed dimensions (constrained by container)
+    const actualDrawW = Math.min(drawW * scale, maxW);
+    const actualDrawH = Math.min(drawH * scale, maxH);
+
+    canvasEl.width = Math.round(actualDrawW);
+    canvasEl.height = Math.round(actualDrawH);
 
     const img = new Image();
     img.onload = () => {
@@ -238,12 +275,12 @@ export default function OcrDemoUI() {
       if (rotation === 90) { ctx.translate(canvasEl.width, 0); ctx.rotate(Math.PI/2); }
       else if (rotation === 180) { ctx.translate(canvasEl.width, canvasEl.height); ctx.rotate(Math.PI); }
       else if (rotation === 270) { ctx.translate(0, canvasEl.height); ctx.rotate(3*Math.PI/2); }
-      ctx.drawImage(img, 0, 0, Math.round(imgW * scale), Math.round(imgH * scale));
+      ctx.drawImage(img, 0, 0, Math.round(actualDrawW), Math.round(actualDrawH));
       ctx.restore();
 
       if (showHighlights) {
-        const dw = Math.round(imgW * scale);
-        const dh = Math.round(imgH * scale);
+        const dw = Math.round(actualDrawW);
+        const dh = Math.round(actualDrawH);
         boxes.forEach((b) => {
           const abs = toPixels(b, dw, dh);
           ctx.lineWidth = 2;
@@ -340,6 +377,7 @@ export default function OcrDemoUI() {
     }
 
     // Convert canvas coordinates to image coordinates
+    // The canvas dimensions now represent the actual displayed image size
     let sx = Math.floor((r.x / dw) * actualImgW);
     let sy = Math.floor((r.y / dh) * actualImgH);
     let sw = Math.ceil((r.w / dw) * actualImgW);
@@ -357,6 +395,17 @@ export default function OcrDemoUI() {
     sy = clamp(sy, 0, imgH - 1);
     sw = clamp(sw, 1, imgW - sx);
     sh = clamp(sh, 1, imgH - sy);
+
+    // Debug logging for coordinate transformation
+    console.log('Drag selection coordinates:', {
+      canvas: { x: r.x, y: r.y, w: r.w, h: r.h },
+      canvasSize: { w: dw, h: dh },
+      image: { x: sx, y: sy, w: sw, h: sh },
+      rotation,
+      zoom,
+      imgNaturalSize: { w: imgW, h: imgH },
+      actualDisplayed: { w: actualImgW, h: actualImgH }
+    });
 
 
 
@@ -552,6 +601,7 @@ export default function OcrDemoUI() {
                   onMouseMove={onCanvasMouseMove}
                   onMouseUp={onCanvasMouseUp}
                   onMouseLeave={()=>{ setHoverBox(null); setCursorPos(null); }}
+                  onWheel={handleWheel}
                 />
 
                 {hoverBox && cursorPos && (
@@ -579,12 +629,29 @@ export default function OcrDemoUI() {
               {/* Toolbar pinned to column, not scrolling with container */}
               <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20">
                 <div className="bg-white/95 backdrop-blur rounded-2xl shadow-md px-3 py-2 flex gap-2 border border-neutral-200">
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Zoom out" onClick={()=> setZoom(z=> clamp(z-0.25,0.25,5))}>−</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Zoom in" onClick={()=> setZoom(z=> clamp(z+0.25,0.25,5))}>＋</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Fit to screen" onClick={()=> setZoom(1)}>Fit</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Rotate 90°" onClick={()=> setRotation(r=> ((r+90)%360) as 0|90|180|270)}>↻</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Toggle highlights" onClick={()=> setShowHighlights(v=>!v)}>{showHighlights ? 'Hide' : 'Show'}</button>
-                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Upload another" onClick={()=>{ setImgUrl(null); setBoxes([]); setHoverBox(null); setStatus(null); }}>Upload</button>
+                  <button 
+                    className={`px-3 py-1.5 rounded-md border hover:bg-neutral-100 ${zoom <= ZOOM_MIN ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    title="Zoom out" 
+                    onClick={() => setZoomWithLimits(prev => prev - 0.25)}
+                    disabled={zoom <= ZOOM_MIN}
+                  >
+                    −
+                  </button>
+                  <span className="px-2 py-1.5 text-sm font-mono text-neutral-600 min-w-[3rem] text-center" title={`Zoom: ${Math.round(zoom * 100)}% (${Math.round(ZOOM_MIN * 100)}% - ${Math.round(ZOOM_MAX * 100)}%)`}>
+                    {Math.round(zoom * 100)}%
+                  </span>
+                  <button 
+                    className={`px-3 py-1.5 rounded-md border hover:bg-neutral-100 ${zoom >= ZOOM_MAX ? 'opacity-50 cursor-not-allowed' : ''}`} 
+                    title="Zoom in" 
+                    onClick={() => setZoomWithLimits(prev => prev + 0.25)}
+                    disabled={zoom >= ZOOM_MAX}
+                  >
+                    ＋
+                  </button>
+                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Fit to screen (Ctrl+Wheel to zoom)" onClick={() => setZoomWithLimits(1)}>Fit</button>
+                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Rotate 90°" onClick={() => setRotation(r => ((r + 90) % 360) as 0 | 90 | 180 | 270)}>↻</button>
+                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Toggle highlights" onClick={() => setShowHighlights(v => !v)}>{showHighlights ? 'Hide' : 'Show'}</button>
+                  <button className="px-3 py-1.5 rounded-md border hover:bg-neutral-100" title="Upload another" onClick={() => { setImgUrl(null); setBoxes([]); setHoverBox(null); setStatus(null); }}>Upload</button>
                 </div>
               </div>
             </div>
