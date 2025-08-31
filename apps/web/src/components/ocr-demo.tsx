@@ -47,6 +47,37 @@ function normWhitespace(s: string) {
   return s.replace(/\s+/g, " ").trim();
 }
 
+// Helper function to transform coordinates based on rotation
+function transformCoordinates(x: number, y: number, width: number, height: number, rotation: number, imgW: number, imgH: number) {
+  switch (rotation) {
+    case 90:
+      return {
+        x: imgW - y - height,
+        y: x,
+        width: height,
+        height: width
+      };
+    case 180:
+      return {
+        x: imgW - x - width,
+        y: imgH - y - height,
+        width: width,
+        height: height
+      };
+    case 270:
+      return {
+        x: y,
+        y: imgH - x - width,
+        width: height,
+        height: width
+      };
+    default:
+      return { x, y, width, height };
+  }
+}
+
+
+
 // ==========================
 // Component Helpers
 // ==========================
@@ -226,8 +257,14 @@ export default function OcrDemoUI() {
       if (dragRect) {
         const r = rectNormalize(dragRect);
         ctx.save();
-        ctx.strokeStyle = "#111"; ctx.setLineDash([6]);
-        ctx.strokeRect(r.x, r.y, r.w, r.h); ctx.restore();
+        
+        // Draw the drag rectangle in the same coordinate space as the mouse events
+        // (untransformed canvas space)
+        ctx.strokeStyle = "#111"; 
+        ctx.setLineDash([6]);
+        ctx.lineWidth = 2;
+        ctx.strokeRect(r.x, r.y, r.w, r.h); 
+        ctx.restore();
       }
     };
     img.src = imgUrl;
@@ -246,13 +283,32 @@ export default function OcrDemoUI() {
     const canvasEl = canvasRef.current; if (!canvasEl) return;
     const rect = canvasEl.getBoundingClientRect();
     const container = containerRef.current;
-    const x = e.clientX - rect.left; const y = e.clientY - rect.top;
+    const x = e.clientX - rect.left; 
+    const y = e.clientY - rect.top;
 
     if (dragStart) setDragRect({ x: dragStart.x, y: dragStart.y, w: x - dragStart.x, h: y - dragStart.y });
 
     if (imgNaturalSize) {
       const dw = canvasEl.width; const dh = canvasEl.height;
-      const nx = clamp(x / dw, 0, 1); const ny = clamp(y / dh, 0, 1);
+      
+      // Convert canvas coordinates to normalized image coordinates
+      let nx = clamp(x / dw, 0, 1); 
+      let ny = clamp(y / dh, 0, 1);
+      
+      // Transform coordinates based on rotation for hit detection
+      if (rotation === 90) {
+        const tempX = nx;
+        nx = ny;
+        ny = 1 - tempX;
+      } else if (rotation === 180) {
+        nx = 1 - nx;
+        ny = 1 - ny;
+      } else if (rotation === 270) {
+        const tempX = nx;
+        nx = 1 - ny;
+        ny = tempX;
+      }
+      
       const hit = boxes.find((b) => nx >= b.x && nx <= b.x + b.w && ny >= b.y && ny <= b.y + b.h) || null;
       setHoverBox(hit);
 
@@ -275,16 +331,34 @@ export default function OcrDemoUI() {
     const dw = canvasEl.width; const dh = canvasEl.height;
     const imgW = imgNaturalSize.w; const imgH = imgNaturalSize.h;
 
-    let sx = Math.floor((r.x / dw) * imgW);
-    let sy = Math.floor((r.y / dh) * imgH);
-    let sw = Math.ceil((r.w / dw) * imgW);
-    let sh = Math.ceil((r.h / dh) * imgH);
+    // Calculate the actual image dimensions after rotation
+    let actualImgW = imgW;
+    let actualImgH = imgH;
+    if (rotation === 90 || rotation === 270) {
+      actualImgW = imgH;
+      actualImgH = imgW;
+    }
+
+    // Convert canvas coordinates to image coordinates
+    let sx = Math.floor((r.x / dw) * actualImgW);
+    let sy = Math.floor((r.y / dh) * actualImgH);
+    let sw = Math.ceil((r.w / dw) * actualImgW);
+    let sh = Math.ceil((r.h / dh) * actualImgH);
+
+    // Handle rotation by transforming coordinates back to original image space
+    const transformed = transformCoordinates(sx, sy, sw, sh, rotation, imgW, imgH);
+    sx = transformed.x;
+    sy = transformed.y;
+    sw = transformed.width;
+    sh = transformed.height;
 
     // Clamp to bounds
     sx = clamp(sx, 0, imgW - 1);
     sy = clamp(sy, 0, imgH - 1);
     sw = clamp(sw, 1, imgW - sx);
     sh = clamp(sh, 1, imgH - sy);
+
+
 
     try {
       setStatus("⏳ Processing OCR...");
@@ -331,10 +405,11 @@ export default function OcrDemoUI() {
         result.words.forEach((word: any) => {
           const boundingBox = word.boundingBox;
           if (boundingBox) {
-            const nx = (sx + boundingBox.x) / imgW;
-            const ny = (sy + boundingBox.y) / imgH;
-            const nw = boundingBox.width / imgW;
-            const nh = boundingBox.height / imgH;
+            // Convert OCR result coordinates to original image coordinates
+            let nx = (sx + boundingBox.x) / imgW;
+            let ny = (sy + boundingBox.y) / imgH;
+            let nw = boundingBox.width / imgW;
+            let nh = boundingBox.height / imgH;
             
             newBoxes.push({ 
               id: uid("word"), 
@@ -358,10 +433,11 @@ export default function OcrDemoUI() {
         result.lines.forEach((line: any) => {
           const boundingBox = line.boundingBox;
           if (boundingBox) {
-            const nx = (sx + boundingBox.x) / imgW;
-            const ny = (sy + boundingBox.y) / imgH;
-            const nw = boundingBox.width / imgW;
-            const nh = boundingBox.height / imgH;
+            // Convert OCR result coordinates to original image coordinates
+            let nx = (sx + boundingBox.x) / imgW;
+            let ny = (sy + boundingBox.y) / imgH;
+            let nw = boundingBox.width / imgW;
+            let nh = boundingBox.height / imgH;
             
             newBoxes.push({ 
               id: uid("line"), 
