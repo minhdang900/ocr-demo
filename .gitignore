@@ -10,9 +10,9 @@
 # node
 node_modules
 # pnpm
-pnpm-lock.yaml
+# pnpm-lock.yaml
 # docker
-docker-compose.yml
+# docker-compose.yml
 # logs
 logs
 dist 

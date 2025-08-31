@@ -1,0 +1,109 @@
+# Docker Compose configuration for Xtracta OCR
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7
+    container_name: xtracta-mongodb
+    ports:
+      - "28017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: xtracta_ocr
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - xtracta-network
+    restart: unless-stopped
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: xtracta-redis
+    ports:
+      - "6479:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - xtracta-network
+    restart: unless-stopped
+
+  # OCR Service (Python HTTP)
+  ocr-service:
+    build:
+      context: ./services/ocr
+      dockerfile: Dockerfile
+    container_name: xtracta-ocr-service
+    ports:
+      - "8001:8001"
+    environment:
+      - OCR_API_KEY=K85032705888957
+    depends_on:
+      - mongodb
+    networks:
+      - xtracta-network
+    restart: unless-stopped
+    command: ["python", "app/http_server.py"]
+
+  # Gateway Service (NestJS)
+  gateway:
+    build:
+      context: .
+      dockerfile: ./apps/gateway/Dockerfile
+      target: production
+    container_name: xtracta-gateway
+    ports:
+      - "3001:3001"
+    environment:
+      - DATABASE_URL=mongodb://mongodb:27017/xtracta_ocr
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - OCR_SERVICE_HOST=ocr-service
+      - OCR_SERVICE_PORT=8001
+      - OCR_API_KEY=K85032705888957
+    depends_on:
+      - mongodb
+      - redis
+      - ocr-service
+    networks:
+      - xtracta-network
+    restart: unless-stopped
+
+  # Web App (Next.js)
+  web-app:
+    build:
+      context: .
+      dockerfile: ./apps/web/Dockerfile
+      target: production
+    container_name: xtracta-web-app
+    ports:
+      - "3000:3000"
+    environment:
+      - NEXT_PUBLIC_GATEWAY_URL=http://localhost:3001
+    depends_on:
+      - gateway
+    networks:
+      - xtracta-network
+    restart: unless-stopped
+
+  # Nginx Load Balancer (Optional)
+  # nginx:
+  #   image: nginx:alpine
+  #   container_name: xtracta-nginx
+  #   ports:
+  #     - "80:80"
+  #   volumes:
+  #     - ./nginx.conf:/etc/nginx/nginx.conf
+  #   depends_on:
+  #     - gateway
+  #     - web-app
+  #   networks:
+  #     - xtracta-network
+  #   restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  redis_data:
+
+networks:
+  xtracta-network:
+    driver: bridge
